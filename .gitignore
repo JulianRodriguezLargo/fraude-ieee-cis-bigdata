@@ -1,0 +1,31 @@
+# Datos: no se suben a Git (pesan GB y la licencia de Kaggle no permite redistribuirlos)
+data/raw/*
+data/lakehouse/*
+data/sample/*
+!data/**/.gitkeep
+*.zip
+*.csv
+
+# Credenciales y configuración local
+.env
+.kaggle/
+kaggle.json
+access_token
+
+# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Spark
+spark-warehouse/
+metastore_db/
+derby.log
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

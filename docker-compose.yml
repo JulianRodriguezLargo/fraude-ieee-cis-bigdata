@@ -1,0 +1,31 @@
+# Etapa 1 del entorno: Spark + Delta Lake + JupyterLab en un solo contenedor.
+# Las etapas siguientes (MinIO, Airflow y Kafka) se agregan a este archivo cuando el pipeline base ya corra.
+#
+# Uso:
+#   docker compose up -d --build     -> construye la imagen y arranca JupyterLab en http://localhost:8888
+#   docker compose exec spark python -m src.pipeline --etapas bronze silver
+#   docker compose down              -> detiene el contenedor (el lakehouse queda en el volumen `lakehouse`)
+
+services:
+  spark:
+    build:
+      context: .
+      dockerfile: docker/spark/Dockerfile
+    image: fraude-ieee-cis/spark:3.5
+    container_name: fraude-spark
+    env_file: .env
+    ports:
+      - "8888:8888"   # JupyterLab
+      - "4040:4040"   # Spark UI (visible mientras corre un trabajo)
+    volumes:
+      # Todo el repositorio se monta en el contenedor: el código y los datos
+      # que edites en Windows se ven al instante dentro de Docker.
+      - ./:/home/proyecto
+      # El lakehouse va en un volumen de Docker (disco Linux), no en la carpeta de Windows:
+      # escribir Delta/Parquet a través de la carpeta compartida con Windows es lento y,
+      # con tablas de ~430 columnas, tumbó el motor de Docker (ver README, Problemas comunes).
+      - lakehouse:/home/proyecto/data/lakehouse
+    restart: unless-stopped
+
+volumes:
+  lakehouse:   # se conserva entre reinicios; solo se borra con `docker compose down -v`

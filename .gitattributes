@@ -1,0 +1,7 @@
+# Fuerza saltos de línea Unix (LF) en los archivos que se ejecutan dentro de Docker.
+# Sin esto, Git en Windows los convierte a CRLF y los scripts fallan dentro del contenedor Linux.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary
+*.zip binary

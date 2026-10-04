@@ -1,0 +1,17 @@
+# Versiones fijadas para que el entorno sea reproducible.
+# PySpark 3.5 + Delta Lake 3.3 son compatibles entre sí (Delta 3.3 exige Spark 3.5.3 o superior, menor que 3.6).
+pyspark==3.5.8
+delta-spark==3.3.2
+
+# Análisis y visualización
+pandas==2.2.3
+pyarrow==18.1.0
+matplotlib==3.9.4
+seaborn==0.13.2
+
+# Registro de experimentos del modelo (versión liviana: sin servidor web)
+mlflow-skinny==3.16.1
+
+# Notebooks
+jupyterlab==4.3.5
+ipykernel==6.29.5
