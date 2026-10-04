@@ -1,0 +1,64 @@
+======================================================================
+EDA INICIAL - IEEE-CIS FRAUD DETECTION
+======================================================================
+
+[1] VOLUME
+Archivo                         Filas  Columnas  Disco (MB)    RAM (MB)
+train_transaction.csv         590,540       394       683.4     2,162.2
+train_identity.csv            144,233        41        26.5       150.1
+test_transaction.csv          506,691       393       613.2     1,857.9
+test_identity.csv             141,907        41        25.8       146.9
+
+Total en disco (4 CSV): 1.35 GB
+Total transacciones (train + test): 1,097,231
+
+[2] VERACITY (train)
+Fraudes: 20,663 de 590,540 = 3.50 %
+Legitimas: 96.50 %
+TransactionID duplicados: 0
+Transacciones con identidad: 24.4 %
+Columnas tras el join: 434
+% total de celdas nulas: 45.1 %
+Columnas con >90 % nulos: 12
+Columnas con >50 % nulos: 214
+Columnas sin nulos: 20
+Top 10 columnas con mas nulos:
+   id_24            99.2 %
+   id_25            99.1 %
+   id_07            99.1 %
+   id_08            99.1 %
+   id_21            99.1 %
+   id_26            99.1 %
+   id_27            99.1 %
+   id_23            99.1 %
+   id_22            99.1 %
+   dist2            93.6 %
+
+TransactionAmt (USD):
+   min 0.25 | mediana 68.77 | media 135.03 | p99 1,104.00 | max 31,937.39
+
+TransactionDT: 86,400 a 15,811,131 segundos = 182 dias
+Promedio: 3,245 transacciones/dia
+
+Tasa de fraude por segmento:
+  ProductCD:
+     C                  n=  68,519  fraude=11.69 %
+     S                  n=  11,628  fraude= 5.90 %
+     H                  n=  33,024  fraude= 4.77 %
+     R                  n=  37,699  fraude= 3.78 %
+     W                  n= 439,670  fraude= 2.04 %
+  card4:
+     discover           n=   6,651  fraude= 7.73 %
+     visa               n= 384,767  fraude= 3.48 %
+     mastercard         n= 189,217  fraude= 3.43 %
+     american express   n=   8,328  fraude= 2.87 %
+  card6:
+     credit             n= 148,986  fraude= 6.68 %
+     debit              n= 439,938  fraude= 2.43 %
+     charge card        n=      15  fraude= 0.00 %
+     debit or credit    n=      30  fraude= 0.00 %
+  DeviceType:
+     mobile             n=  55,645  fraude=10.17 %
+     desktop            n=  85,165  fraude= 6.52 %
+
+Monto total defraudado (train): 3,083,844.86 USD
