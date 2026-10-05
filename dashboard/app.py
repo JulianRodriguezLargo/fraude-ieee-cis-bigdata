@@ -138,7 +138,7 @@ def curva_costo(prob: np.ndarray, y: np.ndarray, monto: np.ndarray, revision: fl
 
 d = cargar()
 if "faltan" in d:
-    st.title("🛡️ Detección de fraude en pagos en línea")
+    st.title("Detección de fraude en pagos en línea")
     st.error("Faltan los datos del dashboard: " + ", ".join(d["faltan"]))
     st.markdown("Genera los archivos con el pipeline y expórtalos desde la raíz del repositorio:\n\n"
                 "```\ndocker compose exec spark python scripts/exportar_gold.py\n```")
@@ -178,7 +178,7 @@ filtrado = aplicar_filtros(cubo[cubo["dia"].between(*rango)])
 hay_filtros = any(seleccion.values()) or rango != (DIA_MIN, DIA_MAX)
 
 # ---------------------------------------------------------------- encabezado y KPIs
-st.title("🛡️ Detección de fraude en pagos en línea")
+st.title("Detección de fraude en pagos en línea")
 st.markdown(
     "Transacciones de comercio electrónico de **Vesta Corporation** (dataset IEEE-CIS), procesadas con "
     "Spark y Delta Lake en una arquitectura Medallion. Este tablero responde **qué caracteriza al fraude**, "
@@ -215,8 +215,8 @@ if tx == 0:
     st.warning("No hay transacciones con esta combinación de filtros.")
     st.stop()
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Panorama del fraude (P1)", "🎯 Modelo (P2)",
-                                        "💰 Umbral y costo (P3)", "🚨 Monitoreo de alertas", "⚡ Streaming en vivo"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Panorama del fraude (P1)", "Modelo (P2)",
+                                        "Umbral y costo (P3)", "Monitoreo de alertas", "Streaming en vivo"])
 
 # ================================================================ P1
 with tab1:
