@@ -212,7 +212,7 @@ El monitoreo es una simulación con predicciones ya calculadas. El streaming en 
 
 ### 11. Streaming en tiempo real con Kafka (bonus)
 
-Un productor envía a Kafka las transacciones de un día de validación, hora por hora. Spark Structured Streaming las lee en micro-lotes de 2 segundos y las califica con el mismo modelo GBT del pipeline, usando el umbral óptimo de la P3. Las alertas quedan en `gold/alertas_streaming` (Delta) y en `dashboard/datos/streaming/`, de donde las lee la pestaña **⚡ Streaming en vivo**.
+Un productor envía a Kafka las transacciones de un día de validación, hora por hora. Spark Structured Streaming las lee en micro-lotes de 2 segundos y las califica con el mismo modelo GBT del pipeline, usando el umbral óptimo de la P3. Las alertas quedan en `gold/alertas_streaming` (Delta) y en `dashboard/datos/streaming/`, de donde las lee la pestaña **Streaming en vivo**.
 
 Requisitos: el pipeline completo ya corrido (paso 7) y los datos del dashboard exportados (paso 9).
 
