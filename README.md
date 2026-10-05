@@ -37,12 +37,20 @@ Todo corre en **Spark 3.5 + Delta Lake 3.3** dentro de Docker. El lakehouse vive
 - Marca Airflow como opcional.
 - Además, la edición gratuita de MinIO fue archivada en 2026.
 
-Si el proyecto continuara, el código ya permite agregarlos: el lakehouse se cambia con una sola variable (`LAKEHOUSE`), y `src/pipeline.py` expone las etapas como funciones que un DAG de Airflow podría llamar sin duplicar lógica.
+En un despliegue real, el código ya permite agregarlos: el lakehouse se cambia con una sola variable (`LAKEHOUSE`), y `src/pipeline.py` expone las etapas como funciones que un DAG de Airflow podría llamar sin duplicar lógica.
+
+### Decisiones de arquitectura
+
+| Decisión | Alternativas descartadas | Por qué |
+| --- | --- | --- |
+| **Lakehouse** (Delta Lake + Medallion) | Data Warehouse (Snowflake, BigQuery); Data Lake solo con Parquet | Necesitamos BI (KPIs, dashboard) y ML (modelo) sobre las mismas tablas. Un Warehouse sirve para BI con datos estructurados, pero el modelo necesita las 434 columnas crudas y anonimizadas, y tiene costo. Un Lake solo con Parquet es barato y flexible, pero no tiene transacciones ACID ni versiones: una escritura que falla a mitad deja la tabla incompleta. Delta Lake guarda Parquet y agrega ACID, versiones (*time travel*) y esquema. |
+| **ELT** | ETL | Bronze guarda el CSV tal cual (append-only, con `_ingest_ts` y `_source_file`) y las transformaciones se hacen después en Spark. Así las reglas de limpieza (por ejemplo, quitar columnas con más de 90 % de nulos) se decidieron mirando los datos ya cargados, y si una regla cambia se recalcula Silver y Gold sin volver a descargar. Con 1,35 GB y 434 columnas, transformar antes de cargar obligaría a decidir sin conocer los datos y perdería el dato original. |
+| **Batch principal + streaming como bonus** | Solo streaming, Lambda, Kappa | Velocity: 3.245 transacciones por día en promedio (unas 2 por minuto) y datos históricos en archivos. Entrenar el modelo y calcular KPIs exige procesar los 182 días completos: eso es batch (14 minutos). El streaming (Kafka + Structured Streaming) solo califica transacciones nuevas con el modelo que entrenó el batch. No es Lambda completa porque no duplicamos la misma lógica en dos capas ni fusionamos vistas; Kappa exigiría que todo, incluido el entrenamiento, pasara por el stream. Es lo que recomienda la guía del curso. |
 
 ## Estructura del repositorio
 
 ```
-├── docker-compose.yml          Entorno: Spark + Delta + JupyterLab
+├── docker-compose.yml          Entorno: Spark + Delta + JupyterLab, y Kafka (perfil "streaming")
 ├── docker/spark/               Dockerfile propio con versiones fijadas
 ├── requirements.txt            Dependencias de Python (versiones fijadas)
 ├── .env.example                Configuración (copiar como .env)
@@ -190,7 +198,7 @@ py -m pip install -r dashboard/requirements.txt
 py -m streamlit run dashboard/app.py
 ```
 
-Se abre en [http://localhost:8501](http://localhost:8501). Tiene cuatro pestañas, una por pregunta de negocio más el monitoreo:
+Se abre en [http://localhost:8501](http://localhost:8501). Tiene cinco pestañas: una por pregunta de negocio, el monitoreo y el streaming en vivo.
 
 | Pestaña | Qué muestra | Pregunta |
 | --- | --- | --- |
@@ -198,28 +206,56 @@ Se abre en [http://localhost:8501](http://localhost:8501). Tiene cuatro pestaña
 | Modelo | ROC-AUC, Recall, Precision y PR-AUC contra la meta, comparación con la línea base, importancia de variables y distribución del puntaje | P2 |
 | Umbral y costo | Costo, alertas por día, fraudes detectados y matriz de confusión según el umbral, con los costos supuestos editables | P3 |
 | Monitoreo de alertas | Simulación de la llegada de las transacciones de un día hora por hora, con las alertas que genera el modelo y descarga en CSV | Uso operativo |
+| Streaming en vivo | Alertas reales que llegan por Kafka y califica Spark Structured Streaming, actualizadas cada 2 segundos (paso 11) | Uso operativo (bonus) |
 
-El monitoreo es una simulación con los datos de validación: en producción las transacciones llegarían por Kafka y se calificarían con Spark Structured Streaming.
+El monitoreo es una simulación con predicciones ya calculadas. El streaming en vivo es real: las transacciones viajan por Kafka y el modelo las califica en el momento.
 
 ### 11. Streaming en tiempo real con Kafka (bonus)
 
-Un productor envía a Kafka las transacciones de un día de validación, hora por hora; Spark Structured Streaming las lee en micro-lotes de 2 segundos, las califica con el mismo modelo GBT del pipeline (umbral óptimo de la P3) y guarda las alertas en `gold/alertas_streaming` y en `dashboard/datos/streaming/`, donde las muestra la pestaña **Streaming en vivo** del dashboard. Requiere haber corrido el pipeline completo.
+Un productor envía a Kafka las transacciones de un día de validación, hora por hora. Spark Structured Streaming las lee en micro-lotes de 2 segundos y las califica con el mismo modelo GBT del pipeline, usando el umbral óptimo de la P3. Las alertas quedan en `gold/alertas_streaming` (Delta) y en `dashboard/datos/streaming/`, de donde las lee la pestaña **⚡ Streaming en vivo**.
+
+Requisitos: el pipeline completo ya corrido (paso 7) y los datos del dashboard exportados (paso 9).
+
+Se necesitan **tres ventanas de PowerShell**, todas abiertas en la carpeta del repositorio. El orden importa: el consumidor arranca primero, porque solo lee los mensajes que llegan después de que empieza a escuchar.
+
+**Ventana 1 — Kafka y consumidor**
 
 ```powershell
-# 1. Kafka (solo la primera vez crea el tópico)
 docker compose --profile streaming up -d
 docker compose exec kafka /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic transacciones --partitions 3 --replication-factor 1 --bootstrap-server localhost:9092
-
-# 2. Ventana 1: consumidor (esperar a que diga "Esperando transacciones...")
 docker compose exec -e SPARK_DRIVER_MEMORY=4g spark python -m src.streaming_consumidor
-
-# 3. Ventana 2: productor (un día de validación, 4 segundos por hora simulada)
-docker compose exec -e SPARK_DRIVER_MEMORY=3g spark python -m src.streaming_productor --dia 182 --pausa 4
-
-# 4. Dashboard abierto en la pestaña "Streaming en vivo"; para terminar, Ctrl + C en el consumidor
 ```
 
-La primera vez, Spark descarga el conector de Kafka (`spark-sql-kafka-0-10`). Cada corrida del consumidor empieza de cero; con `--conservar` mantiene las alertas anteriores.
+- La primera línea levanta Spark y Kafka.
+- La segunda crea el tópico `transacciones` con 3 particiones. Si ya existe, no hace nada, así que se puede correr siempre.
+- La tercera arranca el consumidor. Hay que esperar a que diga `Esperando transacciones...`.
+
+La ventana queda ocupada y muestra una línea por cada micro-lote, por ejemplo: `Lote 12 · 160 transacciones · 31 alertas · 6 fraudes reales entre las alertas · latencia media 3,4 s`. La primera vez Spark descarga el conector de Kafka (`spark-sql-kafka-0-10`) y tarda un poco más.
+
+**Ventana 2 — dashboard**
+
+```powershell
+py -m streamlit run dashboard/app.py
+```
+
+Se abre [http://localhost:8501](http://localhost:8501). Ve a la pestaña **⚡ Streaming en vivo**: queda vacía y esperando datos.
+
+**Ventana 3 — productor**
+
+```powershell
+docker compose exec -e SPARK_DRIVER_MEMORY=3g spark python -m src.streaming_productor --dia 180 --pausa 4
+```
+
+- Envía las 24 horas del día 180, una hora cada 4 segundos. Termina en 2 a 3 minutos.
+- Mientras corre, en la ventana 1 aparecen los lotes y en el dashboard suben las transacciones calificadas, las alertas y el gráfico por hora.
+- `--dia` acepta cualquier día de validación, del 153 al 182; para repetir la demo, usa otro día.
+
+**Para terminar**
+
+1. Presiona `Ctrl + C` en la ventana 1 (consumidor) y en la ventana 2 (dashboard).
+2. Si quieres apagar todo, ejecuta `docker compose --profile streaming down`. Así se conserva el lakehouse; **no** uses `-v`, porque borraría el volumen.
+
+Cada corrida del consumidor empieza de cero (borra las alertas anteriores). Con `--conservar` las mantiene.
 
 ## Qué hace cada etapa
 
@@ -262,7 +298,7 @@ Cifras de la corrida completa del 3 de octubre de 2026 (`python -m src.pipeline`
 | Class weights en vez de sobremuestreo | Cada fraude pesa lo que ~27 legítimas. No duplica filas ni inventa datos. |
 | Se excluyen categóricas con más de 60 valores | `DeviceInfo` o la versión del navegador tienen cientos de valores; se usan sus versiones agrupadas (`device_marca`, `P_email_proveedor`). |
 | Lakehouse en un volumen de Docker, no en la carpeta de Windows | Escribir Delta a través de la carpeta compartida con Windows es lento y, con Silver (~430 columnas), tumbó el motor de Docker dos veces. El volumen vive en el disco Linux de Docker. Los CSV de `data/raw` sí se leen desde Windows, porque solo se leen. |
-| Costos de P3 como supuestos configurables | Contracargo 25 USD y revisión 5 USD en `.env`, pendientes de validar con el profesor. |
+| Costos de P3 como supuestos configurables | Contracargo 25 USD y revisión 5 USD en `.env`. Son supuestos del equipo; en el dashboard se pueden cambiar y el umbral óptimo se recalcula. |
 
 ## Plan B: Google Colab
 
