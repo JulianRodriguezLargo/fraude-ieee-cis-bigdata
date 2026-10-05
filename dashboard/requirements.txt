@@ -1,0 +1,5 @@
+# Solo para el dashboard: no necesita Spark ni Docker
+streamlit==1.65.0
+plotly==6.9.0
+pandas==2.2.3
+numpy>=1.26
