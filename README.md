@@ -56,12 +56,18 @@ El código ya está preparado para esos cambios: el lakehouse se cambia con una 
 │   ├── modelo.py               Regresión Logística + GBT, métricas, umbral óptimo (P2, P3)
 │   ├── graficos.py             Estilo común de los gráficos
 │   └── pipeline.py             Ejecuta todas las etapas en orden
+├── dashboard/
+│   ├── app.py                  Dashboard interactivo en Streamlit (Fase 3)
+│   ├── requirements.txt        Dependencias del dashboard (no necesita Spark)
+│   └── datos/                  CSV exportados desde Gold (no se suben a Git)
+├── .streamlit/config.toml      Tema del dashboard
 ├── notebooks/
 │   ├── 01_eda.ipynb            Análisis exploratorio con gráficos
 │   └── 02_modelo.ipynb         Resultados e interpretación del modelo
 ├── scripts/
 │   ├── verificar_entorno.py    Comprueba Spark, Delta y los datos
 │   ├── crear_muestra.py        Muestra pequeña para desarrollar rápido
+│   ├── exportar_gold.py        Gold -> CSV para el dashboard (Fase 3)
 │   ├── descargar_datos.ps1     Descarga desde Kaggle (Windows)
 │   └── eda_inicial.py          EDA de la Fase 1 (Pandas)
 ├── docs/
@@ -166,13 +172,41 @@ Entra a [http://localhost:8888](http://localhost:8888). La contraseña es el `JU
 
 Mientras corre un trabajo de Spark, su interfaz web está en [http://localhost:4040](http://localhost:4040).
 
+### 9. Exportar Gold para el dashboard
+
+```powershell
+docker compose exec spark python scripts/exportar_gold.py
+```
+
+Deja en `dashboard/datos/` los CSV de `kpis_diarios`, `kpis_dia_segmento`, `fraude_por_segmento`, `curva_costo_umbral` y las predicciones de los últimos 30 días con sus datos de negocio, más los resúmenes JSON. El dashboard lee esos archivos, así que corre en cualquier equipo sin Docker. Esa carpeta no se sube a Git.
+
+### 10. Abrir el dashboard
+
+Desde la raíz del repositorio, en Windows (fuera de Docker):
+
+```powershell
+py -m pip install -r dashboard/requirements.txt
+py -m streamlit run dashboard/app.py
+```
+
+Se abre en [http://localhost:8501](http://localhost:8501). Tiene cuatro pestañas, una por pregunta de negocio más el monitoreo:
+
+| Pestaña | Qué muestra | Pregunta |
+| --- | --- | --- |
+| Panorama del fraude | KPIs con tendencia, transacciones y tasa de fraude por día, tasa por segmento y por hora; filtros por fecha, producto, tarjeta, dispositivo y correo | P1 |
+| Modelo | ROC-AUC, Recall, Precision y PR-AUC contra la meta, comparación con la línea base, importancia de variables y distribución del puntaje | P2 |
+| Umbral y costo | Costo, alertas por día, fraudes detectados y matriz de confusión según el umbral, con los costos supuestos editables | P3 |
+| Monitoreo de alertas | Simulación de la llegada de las transacciones de un día hora por hora, con las alertas que genera el modelo y descarga en CSV | Uso operativo |
+
+El monitoreo es una simulación con los datos de validación: en producción las transacciones llegarían por Kafka y se calificarían con Spark Structured Streaming.
+
 ## Qué hace cada etapa
 
 | Etapa | Entrada → salida | Qué hace |
 | --- | --- | --- |
 | `bronze` | `data/raw/*.csv` → `bronze/*` | Carga los 4 CSV sin transformarlos (ELT) con `_ingest_ts` y `_source_file`. Append-only: si un archivo ya se cargó, se omite. |
 | `silver` | `bronze/*` → `silver/transacciones` | Normaliza nombres (`id-01` del test → `id_01`), elimina duplicados, LEFT JOIN con identidad, elimina columnas con más de 90 % de nulos (decidido solo con el train), deriva `dia`, `hora` y `dia_semana`, agrupa email, dispositivo y categorías raras. |
-| `gold_kpis` | `silver` → `gold/kpis_diarios`, `gold/fraude_por_segmento` | Tasa y monto de fraude por día y por segmento (P1). |
+| `gold_kpis` | `silver` → `gold/kpis_diarios`, `gold/fraude_por_segmento`, `gold/kpis_dia_segmento` | Tasa y monto de fraude por día y por segmento (P1), y conteos por día y segmento para que el dashboard filtre por fecha y categoría a la vez. |
 | `gold_features` | `silver` → `gold/features` | Nulos a -999, `n_nulos`, `log_monto`, categóricas a "missing" y división por tiempo: últimos 30 días = validación. |
 | `modelo` | `gold/features` → `modelos/gbt`, `gold/curva_costo_umbral`, `gold/predicciones` | Regresión Logística (base) y GBT con class weights. Métricas ROC-AUC, PR-AUC, Recall, Precision y F1 (nunca accuracy). Umbral de menor costo (P3). Registro en MLflow. |
 
