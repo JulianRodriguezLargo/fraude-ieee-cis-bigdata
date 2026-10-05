@@ -1,10 +1,11 @@
-# Entorno del proyecto: Spark + Delta Lake + JupyterLab en un solo contenedor.
-# MinIO, Airflow y Kafka quedaron fuera del alcance implementado (ver README, Arquitectura).
+# Entorno del proyecto: Spark + Delta Lake + JupyterLab, y Kafka para el streaming (bonus).
+# MinIO y Airflow quedaron fuera del alcance implementado (ver README, Arquitectura).
 #
 # Uso:
-#   docker compose up -d --build     -> construye la imagen y arranca JupyterLab en http://localhost:8888
+#   docker compose up -d --build                  -> construye la imagen y arranca JupyterLab en http://localhost:8888
 #   docker compose exec spark python -m src.pipeline --etapas bronze silver
-#   docker compose down              -> detiene el contenedor (el lakehouse queda en el volumen `lakehouse`)
+#   docker compose --profile streaming up -d      -> además arranca Kafka (solo para el streaming)
+#   docker compose down                           -> detiene los contenedores (el lakehouse queda en el volumen `lakehouse`)
 
 services:
   spark:
@@ -25,6 +26,28 @@ services:
       # escribir Delta/Parquet a través de la carpeta compartida con Windows es lento y,
       # con tablas de ~430 columnas, tumbó el motor de Docker (ver README, Problemas comunes).
       - lakehouse:/home/proyecto/data/lakehouse
+    restart: unless-stopped
+
+  # Kafka en modo KRaft (sin ZooKeeper), un solo nodo. Solo arranca con --profile streaming.
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: fraude-kafka
+    profiles: ["streaming"]
+    environment:
+      CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_HEAP_OPTS: "-Xmx512m -Xms512m"
     restart: unless-stopped
 
 volumes:

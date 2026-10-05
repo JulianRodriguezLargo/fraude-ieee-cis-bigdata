@@ -31,11 +31,10 @@ CSV de Kaggle ─► BRONZE ─► SILVER ─► GOLD ────────�
 
 Todo corre en **Spark 3.5 + Delta Lake 3.3** dentro de Docker. El lakehouse vive en `data/lakehouse/` dentro del contenedor, guardado en un volumen de Docker llamado `lakehouse`.
 
-**Alcance implementado.** De la arquitectura de la Fase 1 se implementaron las capas que generan el valor del proyecto: ingesta, almacenamiento Medallion, procesamiento, EDA, modelo y dashboard. MinIO, Airflow y Kafka quedaron fuera del alcance:
+**Alcance implementado.** De la arquitectura de la Fase 1 se implementaron ingesta, almacenamiento Medallion, procesamiento, EDA, modelo, dashboard y, como bonus, el streaming con Kafka y Spark Structured Streaming (paso 11). MinIO y Airflow quedaron fuera del alcance:
 
 - La guía del curso permite el sistema de archivos local como almacenamiento.
 - Marca Airflow como opcional.
-- Define el streaming como bonus.
 - Además, la edición gratuita de MinIO fue archivada en 2026.
 
 Si el proyecto continuara, el código ya permite agregarlos: el lakehouse se cambia con una sola variable (`LAKEHOUSE`), y `src/pipeline.py` expone las etapas como funciones que un DAG de Airflow podría llamar sin duplicar lógica.
@@ -55,6 +54,8 @@ Si el proyecto continuara, el código ya permite agregarlos: el lakehouse se cam
 │   ├── gold_features.py        Silver -> Gold: tabla de features del modelo
 │   ├── modelo.py               Regresión Logística + GBT, métricas, umbral óptimo (P2, P3)
 │   ├── graficos.py             Estilo común de los gráficos
+│   ├── streaming_productor.py  Bonus: envía transacciones a Kafka, hora por hora
+│   ├── streaming_consumidor.py Bonus: Structured Streaming califica y guarda alertas
 │   └── pipeline.py             Ejecuta todas las etapas en orden
 ├── dashboard/
 │   ├── app.py                  Dashboard interactivo en Streamlit (Fase 3)
@@ -199,6 +200,26 @@ Se abre en [http://localhost:8501](http://localhost:8501). Tiene cuatro pestaña
 | Monitoreo de alertas | Simulación de la llegada de las transacciones de un día hora por hora, con las alertas que genera el modelo y descarga en CSV | Uso operativo |
 
 El monitoreo es una simulación con los datos de validación: en producción las transacciones llegarían por Kafka y se calificarían con Spark Structured Streaming.
+
+### 11. Streaming en tiempo real con Kafka (bonus)
+
+Un productor envía a Kafka las transacciones de un día de validación, hora por hora; Spark Structured Streaming las lee en micro-lotes de 2 segundos, las califica con el mismo modelo GBT del pipeline (umbral óptimo de la P3) y guarda las alertas en `gold/alertas_streaming` y en `dashboard/datos/streaming/`, donde las muestra la pestaña **Streaming en vivo** del dashboard. Requiere haber corrido el pipeline completo.
+
+```powershell
+# 1. Kafka (solo la primera vez crea el tópico)
+docker compose --profile streaming up -d
+docker compose exec kafka /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic transacciones --partitions 3 --replication-factor 1 --bootstrap-server localhost:9092
+
+# 2. Ventana 1: consumidor (esperar a que diga "Esperando transacciones...")
+docker compose exec -e SPARK_DRIVER_MEMORY=4g spark python -m src.streaming_consumidor
+
+# 3. Ventana 2: productor (un día de validación, 4 segundos por hora simulada)
+docker compose exec -e SPARK_DRIVER_MEMORY=3g spark python -m src.streaming_productor --dia 182 --pausa 4
+
+# 4. Dashboard abierto en la pestaña "Streaming en vivo"; para terminar, Ctrl + C en el consumidor
+```
+
+La primera vez, Spark descarga el conector de Kafka (`spark-sql-kafka-0-10`). Cada corrida del consumidor empieza de cero; con `--conservar` mantiene las alertas anteriores.
 
 ## Qué hace cada etapa
 

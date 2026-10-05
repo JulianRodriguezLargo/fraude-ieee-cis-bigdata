@@ -68,8 +68,16 @@ def get_logger(nombre: str) -> logging.Logger:
 # ---------------------------------------------------------------------------
 # Spark
 # ---------------------------------------------------------------------------
-def get_spark(app_name: str = "fraude-ieee-cis") -> SparkSession:
-    """Crea (o reutiliza) la sesión de Spark, con Delta Lake si TABLE_FORMAT=delta."""
+def get_spark(app_name: str = "fraude-ieee-cis", kafka: bool = False) -> SparkSession:
+    """Crea (o reutiliza) la sesión de Spark, con Delta Lake si TABLE_FORMAT=delta.
+
+    Con kafka=True agrega el conector de Kafka para Spark (lo usa el streaming, que es opcional).
+    """
+    paquetes = []
+    if kafka:
+        import pyspark
+
+        paquetes.append(f"org.apache.spark:spark-sql-kafka-0-10_2.12:{pyspark.__version__}")
     builder = (
         SparkSession.builder.appName(app_name)
         .master(os.getenv("SPARK_MASTER", "local[*]"))
@@ -86,8 +94,10 @@ def get_spark(app_name: str = "fraude-ieee-cis") -> SparkSession:
             builder.config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
             .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
         )
-        spark = configure_spark_with_delta_pip(builder).getOrCreate()
+        spark = configure_spark_with_delta_pip(builder, extra_packages=paquetes).getOrCreate()
     else:
+        if paquetes:
+            builder = builder.config("spark.jars.packages", ",".join(paquetes))
         spark = builder.getOrCreate()
     spark.sparkContext.setLogLevel("WARN")
     return spark

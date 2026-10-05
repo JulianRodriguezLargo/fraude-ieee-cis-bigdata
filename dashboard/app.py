@@ -215,8 +215,8 @@ if tx == 0:
     st.warning("No hay transacciones con esta combinación de filtros.")
     st.stop()
 
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Panorama del fraude (P1)", "🎯 Modelo (P2)",
-                                  "💰 Umbral y costo (P3)", "🚨 Monitoreo de alertas"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Panorama del fraude (P1)", "🎯 Modelo (P2)",
+                                        "💰 Umbral y costo (P3)", "🚨 Monitoreo de alertas", "⚡ Streaming en vivo"])
 
 # ================================================================ P1
 with tab1:
@@ -438,7 +438,7 @@ with tab3:
 with tab4:
     st.markdown("**Simulación de monitoreo:** se reproducen, hora por hora, las transacciones de un día del periodo "
                 "de validación como si llegaran en vivo, y el modelo marca las que superan el umbral. "
-                "En producción llegarían por Kafka y se calificarían con Spark Structured Streaming.")
+                "Para el flujo real con Kafka y Spark Structured Streaming, ver la pestaña **Streaming en vivo**.")
     a, b = st.columns([1, 2])
     dia = a.selectbox("Día de validación", DIAS_VALIDACION, index=len(DIAS_VALIDACION) - 1,
                       format_func=lambda v: f"Día {v}")
@@ -495,6 +495,61 @@ with tab4:
     zona_tabla.dataframe(tabla, hide_index=True, column_config=config_tabla, width="stretch", height=380)
     st.download_button("Descargar alertas del día (CSV)", tabla.to_csv(index=False).encode("utf-8"),
                        file_name=f"alertas_dia_{dia}.csv", mime="text/csv")
+
+# ================================================================ Streaming real (bonus)
+STREAM = DATOS / "streaming" / "alertas_stream.csv"
+
+with tab5:
+    st.markdown("**Streaming real (bonus):** un productor envía a **Kafka** las transacciones de un día de validación, "
+                "hora por hora; **Spark Structured Streaming** las lee en micro-lotes de 2 segundos, las califica con el "
+                "mismo modelo GBT del pipeline y guarda las alertas en Gold. Este panel se actualiza solo cada 2 segundos.")
+    st.caption("Productor → Kafka (tópico transacciones) → Spark Structured Streaming → modelo GBT → "
+               "gold/alertas_streaming (Delta) → este panel")
+
+    @st.fragment(run_every=2)
+    def panel_streaming() -> None:
+        try:
+            df = pd.read_csv(STREAM).dropna(subset=["TransactionID"])
+        except (FileNotFoundError, pd.errors.EmptyDataError):
+            st.info("Esperando transacciones del streaming. Con Kafka arriba, lanza el consumidor y luego el productor "
+                    "(README, sección Streaming).")
+            return
+        alertas = df[df["alerta"].astype(str) == "True"]
+        c = st.columns(4)
+        c[0].metric("Transacciones calificadas", entero(len(df)), border=True)
+        c[1].metric("Alertas generadas", entero(len(alertas)), border=True)
+        c[2].metric("Alertas que eran fraude", entero(int(alertas["isFraud"].sum())), border=True)
+        c[3].metric("Latencia media", dec(df["latencia_s"].mean(), 1) + " s", border=True,
+                    help="Tiempo entre el envío a Kafka y la calificación del modelo")
+        dia_actual = int(df["dia"].iloc[-1])
+        dias = ", ".join(str(int(d)) for d in df["dia"].drop_duplicates())
+        st.caption(f"Días recibidos en esta corrida: {dias}. El gráfico muestra el día en curso.")
+        por_hora = alertas[alertas["dia"] == dia_actual].groupby(["hora", "isFraud"]).size().unstack(fill_value=0) \
+            .reindex(index=range(24), columns=[0, 1], fill_value=0)
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=por_hora.index, y=por_hora[1], name="Alerta correcta (fraude real)", marker_color=FRAUDE,
+                             hovertemplate="Hora %{x}: %{y} fraudes<extra></extra>"))
+        fig.add_trace(go.Bar(x=por_hora.index, y=por_hora[0], name="Falsa alarma (legítima)", marker_color=LEGITIMA,
+                             hovertemplate="Hora %{x}: %{y} falsas alarmas<extra></extra>"))
+        fig.update_layout(title=f"Alertas por hora a medida que llegan · día {dia_actual}",
+                          barmode="stack", bargap=0.2)
+        fig.update_xaxes(title="Hora", dtick=1, range=[-0.5, 23.5])
+        grafico(estilo(fig, alto=300, leyenda=True))
+        ultimas = alertas.sort_values(["calificado_ts", "hora"], ascending=False).head(10).assign(
+            real=lambda d: np.where(d["isFraud"] == 1, "Sí", "No"),
+            calificado_ts=lambda d: pd.to_datetime(d["calificado_ts"]).dt.strftime("%H:%M:%S"))
+        cols = {"calificado_ts": "Calificada (UTC)", "TransactionID": "Transacción", "hora": "Hora",
+                "TransactionAmt": "Monto (US$)", "prob_fraude": "Puntaje", "ProductCD": "Producto",
+                "card6": "Tarjeta", "P_email_proveedor": "Correo", "real": "¿Era fraude?"}
+        st.markdown("**Últimas alertas**")
+        st.dataframe(ultimas[[k for k in cols if k in ultimas.columns]].rename(columns=cols), hide_index=True,
+                     width="stretch",
+                     column_config={"Puntaje": st.column_config.ProgressColumn("Puntaje", min_value=0.0, max_value=1.0,
+                                                                               format="%.2f"),
+                                    "Transacción": st.column_config.NumberColumn(format="%d"),
+                                    "Monto (US$)": st.column_config.NumberColumn(format="%.2f")})
+
+    panel_streaming()
 
 st.divider()
 st.caption("Pipeline: CSV de Kaggle → Bronze → Silver → Gold en Spark 3.5 y Delta Lake · modelo GBT de Spark MLlib "
