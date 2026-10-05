@@ -1,0 +1,12 @@
+{
+  "filas_por_dataset": {
+    "train": 590540,
+    "test": 506691
+  },
+  "columnas_silver": 430,
+  "columnas_eliminadas_por_nulos": 12,
+  "umbral_nulos": 0.9,
+  "tasa_fraude_train_pct": 3.5,
+  "pct_train_con_identidad": 24.4,
+  "segundos": 209.4
+}

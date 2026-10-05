@@ -1,0 +1,7 @@
+[
+  "El 3.50 % de las transacciones del train son fraude: el dataset está desbalanceado y se evaluará con Recall, Precision, F1 y AUC, nunca con accuracy.",
+  "Silver eliminó 12 columnas con más de 90 % de nulos; de las que quedan, 204 siguen con más de 50 % de nulos.",
+  "El monto tiene cola larga: mediana 68.77 USD y máximo 31,937.39 USD (464 veces la mediana).",
+  "El segmento más riesgoso es P_email_proveedor = mail, con 18.96 % de fraude frente al 3.50 % global.",
+  "El producto menos riesgoso es W (2.04 %)."
+]

@@ -1,0 +1,42 @@
+{
+  "transacciones_train": 590540,
+  "fraudes": 20663,
+  "tasa_fraude_pct": 3.499,
+  "monto_total_usd": 79738948.73,
+  "monto_fraude_usd": 3083844.86,
+  "dias": 182,
+  "segmento_mas_riesgoso": {
+    "DeviceType": {
+      "valor": "mobile",
+      "tasa_fraude_pct": 10.166
+    },
+    "P_email_proveedor": {
+      "valor": "mail",
+      "tasa_fraude_pct": 18.962
+    },
+    "ProductCD": {
+      "valor": "C",
+      "tasa_fraude_pct": 11.687
+    },
+    "card4": {
+      "valor": "discover",
+      "tasa_fraude_pct": 7.728
+    },
+    "card6": {
+      "valor": "credit",
+      "tasa_fraude_pct": 6.678
+    },
+    "device_marca": {
+      "valor": "motorola",
+      "tasa_fraude_pct": 14.9
+    },
+    "dia_semana": {
+      "valor": "0",
+      "tasa_fraude_pct": 3.717
+    },
+    "hora": {
+      "valor": "7",
+      "tasa_fraude_pct": 10.61
+    }
+  }
+}

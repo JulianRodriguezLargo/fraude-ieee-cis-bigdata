@@ -1,0 +1,125 @@
+{
+  "peso_clase_fraude": 27.59,
+  "filas_entrenamiento": {
+    "1": 17669,
+    "0": 487441
+  },
+  "costos_supuestos": {
+    "contracargo_usd": 25.0,
+    "revision_usd": 5.0
+  },
+  "regresion_logistica": {
+    "roc_auc": 0.8104,
+    "pr_auc": 0.1273,
+    "precision": 0.1012,
+    "recall": 0.7204,
+    "f1": 0.1774,
+    "segundos": 207
+  },
+  "gbt": {
+    "roc_auc": 0.8974,
+    "pr_auc": 0.4841,
+    "precision": 0.1823,
+    "recall": 0.7558,
+    "f1": 0.2938,
+    "segundos": 248,
+    "iteraciones": 60
+  },
+  "criterio_p2": {
+    "meta": "ROC-AUC >= 0.85 y Recall >= 0.70 (umbral 0.5)",
+    "cumple": true
+  },
+  "p3_umbral_optimo": {
+    "umbral": 0.4,
+    "costo_total_usd": 183648.88,
+    "costo_sin_modelo_usd": 532285.58,
+    "ahorro_usd": 348636.7,
+    "recall": 0.8203,
+    "precision": 0.1398,
+    "alertas_por_dia": 585.4,
+    "periodo_validacion_dias": 30
+  },
+  "importancia_variables_top20": [
+    {
+      "variable": "P_email_proveedor",
+      "importancia": 0.0748
+    },
+    {
+      "variable": "log_monto",
+      "importancia": 0.0522
+    },
+    {
+      "variable": "card6",
+      "importancia": 0.0449
+    },
+    {
+      "variable": "R_email_proveedor",
+      "importancia": 0.0425
+    },
+    {
+      "variable": "V258",
+      "importancia": 0.0393
+    },
+    {
+      "variable": "D2",
+      "importancia": 0.0344
+    },
+    {
+      "variable": "card2",
+      "importancia": 0.0326
+    },
+    {
+      "variable": "V294",
+      "importancia": 0.0307
+    },
+    {
+      "variable": "C1",
+      "importancia": 0.0303
+    },
+    {
+      "variable": "C14",
+      "importancia": 0.0289
+    },
+    {
+      "variable": "ProductCD",
+      "importancia": 0.0269
+    },
+    {
+      "variable": "C13",
+      "importancia": 0.0238
+    },
+    {
+      "variable": "card1",
+      "importancia": 0.0231
+    },
+    {
+      "variable": "C11",
+      "importancia": 0.0217
+    },
+    {
+      "variable": "D15",
+      "importancia": 0.0194
+    },
+    {
+      "variable": "M4",
+      "importancia": 0.0166
+    },
+    {
+      "variable": "D3",
+      "importancia": 0.0157
+    },
+    {
+      "variable": "card5",
+      "importancia": 0.0151
+    },
+    {
+      "variable": "card3",
+      "importancia": 0.0139
+    },
+    {
+      "variable": "V312",
+      "importancia": 0.0131
+    }
+  ],
+  "segundos_total": 456
+}

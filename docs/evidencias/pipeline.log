@@ -1,0 +1,113 @@
+2026-10-04 03:13:46 | INFO | bronze | === BRONZE: ingesta de 4 archivos desde /home/proyecto/data/raw ===
+2026-10-04 03:14:24 | INFO | bronze | train_transaction.csv    -> bronze/train_transaction     590,540 filas   394 columnas  (38 s)
+2026-10-04 03:14:27 | INFO | bronze | train_identity.csv       -> bronze/train_identity        144,233 filas    41 columnas  (3 s)
+2026-10-04 03:14:52 | INFO | bronze | test_transaction.csv     -> bronze/test_transaction      506,691 filas   393 columnas  (25 s)
+2026-10-04 03:14:54 | INFO | bronze | test_identity.csv        -> bronze/test_identity         141,907 filas    41 columnas  (2 s)
+2026-10-04 03:14:54 | INFO | pipeline | >>> Etapa bronze terminada en 68 s
+2026-10-04 03:14:54 | INFO | silver | === SILVER: limpieza desde Bronze ===
+2026-10-04 03:14:55 | INFO | silver | train: transaction ⋈ identity (left join) listo
+2026-10-04 03:14:55 | INFO | silver | test : transaction ⋈ identity (left join) listo
+2026-10-04 03:16:31 | INFO | silver | Columnas con más de 90 % de nulos en el train: 12 -> se eliminan
+2026-10-04 03:18:41 | INFO | silver | Silver escrito en /home/proyecto/data/lakehouse/silver/transacciones
+2026-10-04 03:18:41 | INFO | silver |   filas_por_dataset                {'train': 590540, 'test': 506691}
+2026-10-04 03:18:41 | INFO | silver |   columnas_silver                  430
+2026-10-04 03:18:41 | INFO | silver |   columnas_eliminadas_por_nulos    12
+2026-10-04 03:18:41 | INFO | silver |   umbral_nulos                     0.9
+2026-10-04 03:18:41 | INFO | silver |   tasa_fraude_train_pct            3.5
+2026-10-04 03:18:41 | INFO | silver |   pct_train_con_identidad          24.4
+2026-10-04 03:18:41 | INFO | silver |   segundos                         226.6
+2026-10-04 03:18:41 | INFO | pipeline | >>> Etapa silver terminada en 227 s
+2026-10-04 03:18:41 | INFO | gold_kpis | === GOLD: KPIs de negocio ===
+2026-10-04 03:19:02 | INFO | gold_kpis | KPIs: 590,540 transacciones · 20,663 fraudes (3.50 %) · 3,083,844.86 USD defraudados
+2026-10-04 03:19:02 | INFO | gold_kpis |   más riesgoso en DeviceType         mobile          10.17 %
+2026-10-04 03:19:02 | INFO | gold_kpis |   más riesgoso en P_email_proveedor  mail            18.96 %
+2026-10-04 03:19:02 | INFO | gold_kpis |   más riesgoso en ProductCD          C               11.69 %
+2026-10-04 03:19:02 | INFO | gold_kpis |   más riesgoso en card4              discover         7.73 %
+2026-10-04 03:19:02 | INFO | gold_kpis |   más riesgoso en card6              credit           6.68 %
+2026-10-04 03:19:02 | INFO | gold_kpis |   más riesgoso en device_marca       motorola        14.90 %
+2026-10-04 03:19:02 | INFO | gold_kpis |   más riesgoso en dia_semana         0                3.72 %
+2026-10-04 03:19:02 | INFO | gold_kpis |   más riesgoso en hora               7               10.61 %
+2026-10-04 03:19:02 | INFO | pipeline | >>> Etapa gold_kpis terminada en 21 s
+2026-10-04 03:19:02 | INFO | gold_features | === GOLD: features para el modelo ===
+2026-10-04 03:19:42 | INFO | gold_features | Features: 395 numéricas + 26 categóricas (3 categóricas excluidas por tener más de 60 valores)
+2026-10-04 03:19:42 | INFO | gold_features | Validación por tiempo: días > 152  ·  filas por split: {'test_kaggle': 506691, 'entrenamiento': 505110, 'validacion': 85430}
+2026-10-04 03:19:42 | INFO | pipeline | >>> Etapa gold_features terminada en 40 s
+2026-10-04 03:19:42 | INFO | modelo | === MODELO: entrenamiento y evaluación (fracción de entrenamiento: 20 %) ===
+2026-10-04 03:19:43 | INFO | modelo | Entrenamiento: 97,781 legítimas, 17,669 fraudes -> peso de cada fraude: 5.5
+2026-10-04 03:21:30 | INFO | modelo | Regresión Logística -> {'roc_auc': 0.8181, 'pr_auc': 0.1479, 'precision': 0.1038, 'recall': 0.7288, 'f1': 0.1818, 'segundos': 108}
+2026-10-04 03:22:50 | INFO | modelo | GBT con class weights -> {'roc_auc': 0.8862, 'pr_auc': 0.4614, 'precision': 0.163, 'recall': 0.7488, 'f1': 0.2677, 'segundos': 80, 'iteraciones': 30}
+2026-10-04 03:22:50 | INFO | modelo | P3 -> umbral óptimo 0.30: costo 200,262 USD vs 532,286 USD sin modelo (ahorro 332,024 USD en 30 días)
+2026-10-04 03:24:25 | INFO | modelo | Experimento registrado en MLflow (/home/proyecto/data/lakehouse/mlruns)
+2026-10-04 03:24:25 | INFO | modelo | Modelo guardado en /home/proyecto/data/lakehouse/modelos/gbt · métricas en _meta/modelo_metricas.json
+2026-10-04 03:24:25 | INFO | pipeline | >>> Etapa modelo terminada en 283 s
+2026-10-04 03:24:25 | INFO | pipeline | >>> Pipeline completo en 639 s
+2026-10-04 03:24:25 | INFO | pipeline | Evidencias (log y resúmenes JSON) copiadas a /home/proyecto/docs/evidencias
+2026-10-04 03:40:41 | INFO | bronze | === BRONZE: ingesta de 4 archivos desde /home/proyecto/data/raw ===
+2026-10-04 03:40:51 | INFO | bronze | train_transaction.csv ya estaba en Bronze: se omite (append-only, sin duplicados)
+2026-10-04 03:40:53 | INFO | bronze | train_identity.csv ya estaba en Bronze: se omite (append-only, sin duplicados)
+2026-10-04 03:40:54 | INFO | bronze | test_transaction.csv ya estaba en Bronze: se omite (append-only, sin duplicados)
+2026-10-04 03:40:55 | INFO | bronze | test_identity.csv ya estaba en Bronze: se omite (append-only, sin duplicados)
+2026-10-04 03:40:55 | INFO | pipeline | >>> Etapa bronze terminada en 14 s
+2026-10-04 03:40:55 | INFO | silver | === SILVER: limpieza desde Bronze ===
+2026-10-04 03:40:56 | INFO | silver | train: transaction ⋈ identity (left join) listo
+2026-10-04 03:40:56 | INFO | silver | test : transaction ⋈ identity (left join) listo
+2026-10-04 03:42:28 | INFO | silver | Columnas con más de 90 % de nulos en el train: 12 -> se eliminan
+2026-10-04 03:44:25 | INFO | silver | Silver escrito en /home/proyecto/data/lakehouse/silver/transacciones
+2026-10-04 03:44:25 | INFO | silver |   filas_por_dataset                {'train': 590540, 'test': 506691}
+2026-10-04 03:44:25 | INFO | silver |   columnas_silver                  430
+2026-10-04 03:44:25 | INFO | silver |   columnas_eliminadas_por_nulos    12
+2026-10-04 03:44:25 | INFO | silver |   umbral_nulos                     0.9
+2026-10-04 03:44:25 | INFO | silver |   tasa_fraude_train_pct            3.5
+2026-10-04 03:44:25 | INFO | silver |   pct_train_con_identidad          24.4
+2026-10-04 03:44:25 | INFO | silver |   segundos                         209.4
+2026-10-04 03:44:25 | INFO | pipeline | >>> Etapa silver terminada en 209 s
+2026-10-04 03:44:25 | INFO | gold_kpis | === GOLD: KPIs de negocio ===
+2026-10-04 03:44:47 | INFO | gold_kpis | KPIs: 590,540 transacciones · 20,663 fraudes (3.50 %) · 3,083,844.86 USD defraudados
+2026-10-04 03:44:47 | INFO | gold_kpis |   más riesgoso en DeviceType         mobile          10.17 %
+2026-10-04 03:44:47 | INFO | gold_kpis |   más riesgoso en P_email_proveedor  mail            18.96 %
+2026-10-04 03:44:47 | INFO | gold_kpis |   más riesgoso en ProductCD          C               11.69 %
+2026-10-04 03:44:47 | INFO | gold_kpis |   más riesgoso en card4              discover         7.73 %
+2026-10-04 03:44:47 | INFO | gold_kpis |   más riesgoso en card6              credit           6.68 %
+2026-10-04 03:44:47 | INFO | gold_kpis |   más riesgoso en device_marca       motorola        14.90 %
+2026-10-04 03:44:47 | INFO | gold_kpis |   más riesgoso en dia_semana         0                3.72 %
+2026-10-04 03:44:47 | INFO | gold_kpis |   más riesgoso en hora               7               10.61 %
+2026-10-04 03:44:47 | INFO | pipeline | >>> Etapa gold_kpis terminada en 23 s
+2026-10-04 03:44:47 | INFO | gold_features | === GOLD: features para el modelo ===
+2026-10-04 03:45:31 | INFO | gold_features | Features: 395 numéricas + 26 categóricas (3 categóricas excluidas por tener más de 60 valores)
+2026-10-04 03:45:31 | INFO | gold_features | Validación por tiempo: días > 152  ·  filas por split: {'test_kaggle': 506691, 'entrenamiento': 505110, 'validacion': 85430}
+2026-10-04 03:45:31 | INFO | pipeline | >>> Etapa gold_features terminada en 44 s
+2026-10-04 03:45:31 | INFO | modelo | === MODELO: entrenamiento y evaluación (fracción de entrenamiento: 100 %) ===
+2026-10-04 03:45:32 | INFO | modelo | Entrenamiento: 487,441 legítimas, 17,669 fraudes -> peso de cada fraude: 27.6
+2026-10-04 03:48:59 | INFO | modelo | Regresión Logística -> {'roc_auc': 0.8104, 'pr_auc': 0.1273, 'precision': 0.1012, 'recall': 0.7204, 'f1': 0.1774, 'segundos': 207}
+2026-10-04 03:53:07 | INFO | modelo | GBT con class weights -> {'roc_auc': 0.8974, 'pr_auc': 0.4841, 'precision': 0.1823, 'recall': 0.7558, 'f1': 0.2938, 'segundos': 248, 'iteraciones': 60}
+2026-10-04 03:53:07 | INFO | modelo | P3 -> umbral óptimo 0.40: costo 183,649 USD vs 532,286 USD sin modelo (ahorro 348,637 USD en 30 días)
+2026-10-04 03:54:50 | INFO | modelo | Experimento registrado en MLflow (/home/proyecto/data/lakehouse/mlruns)
+2026-10-04 03:54:50 | INFO | modelo | Modelo guardado en /home/proyecto/data/lakehouse/modelos/gbt · métricas en _meta/modelo_metricas.json
+2026-10-04 03:54:50 | INFO | pipeline | >>> Etapa modelo terminada en 559 s
+2026-10-04 03:54:50 | INFO | pipeline | >>> Pipeline completo en 849 s
+2026-10-04 03:54:50 | INFO | pipeline | Evidencias (log y resúmenes JSON) copiadas a /home/proyecto/docs/evidencias
+2026-10-05 00:20:39 | INFO | gold_kpis | === GOLD: KPIs de negocio ===
+2026-10-05 00:21:16 | INFO | gold_kpis | KPIs: 590,540 transacciones · 20,663 fraudes (3.50 %) · 3,083,844.86 USD defraudados
+2026-10-05 00:21:16 | INFO | gold_kpis |   más riesgoso en DeviceType         mobile          10.17 %
+2026-10-05 00:21:16 | INFO | gold_kpis |   más riesgoso en P_email_proveedor  mail            18.96 %
+2026-10-05 00:21:16 | INFO | gold_kpis |   más riesgoso en ProductCD          C               11.69 %
+2026-10-05 00:21:16 | INFO | gold_kpis |   más riesgoso en card4              discover         7.73 %
+2026-10-05 00:21:16 | INFO | gold_kpis |   más riesgoso en card6              credit           6.68 %
+2026-10-05 00:21:16 | INFO | gold_kpis |   más riesgoso en device_marca       motorola        14.90 %
+2026-10-05 00:21:16 | INFO | gold_kpis |   más riesgoso en dia_semana         0                3.72 %
+2026-10-05 00:21:16 | INFO | gold_kpis |   más riesgoso en hora               7               10.61 %
+2026-10-05 00:21:16 | INFO | pipeline | >>> Etapa gold_kpis terminada en 37 s
+2026-10-05 00:21:16 | INFO | pipeline | >>> Pipeline completo en 37 s
+2026-10-05 00:21:16 | INFO | pipeline | Evidencias (log y resúmenes JSON) copiadas a /home/proyecto/docs/evidencias
+2026-10-05 00:26:41 | INFO | gold_kpis | === GOLD: KPIs de negocio ===
+2026-10-05 00:27:19 | INFO | gold_kpis | KPIs: 590,540 transacciones · 20,663 fraudes (3.50 %) · 3,083,844.86 USD defraudados
+2026-10-05 00:27:19 | INFO | gold_kpis |   más riesgoso en DeviceType         mobile          10.17 %
+2026-10-05 00:27:19 | INFO | gold_kpis |   más riesgoso en P_email_proveedor  mail            18.96 %
+2026-10-05 00:27:19 | INFO | gold_kpis |   más riesgoso en ProductCD          C               11.69 %
+2026-10-05 00:27:19 | INFO | gold_kpis |   más riesgoso en card4              discover         7.73 %
+2026-10-05 00:27:19 | INFO | gold_kpis |   más riesgoso en card6              credit           6.68 %
+2026-10-05 00:27:19 | INFO | gold_kpis |   más riesgoso en device_marca       motorola        14.90 %
+2026-10-05 00:27:19 | INFO | gold_kpis |   más riesgoso en dia_semana         0                3.72 %
+2026-10-05 00:27:19 | INFO | gold_kpis |   más riesgoso en hora               7               10.61 %
+2026-10-05 00:27:19 | INFO | pipeline | >>> Etapa gold_kpis terminada en 38 s
+2026-10-05 00:27:19 | INFO | pipeline | >>> Pipeline completo en 38 s
