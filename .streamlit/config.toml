@@ -1,0 +1,14 @@
+# Tema del dashboard (Streamlit lo lee desde la carpeta donde se ejecuta: la raíz del repositorio)
+[theme]
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#fcfcfb"
+secondaryBackgroundColor = "#f2f1ec"
+textColor = "#0b0b0b"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "viewer"

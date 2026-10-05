@@ -2,6 +2,8 @@
 data/raw/*
 data/lakehouse/*
 data/sample/*
+dashboard/datos/*
+!dashboard/datos/.gitkeep
 !data/**/.gitkeep
 *.zip
 *.csv
