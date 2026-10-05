@@ -238,7 +238,7 @@ La ventana queda ocupada y muestra una línea por cada micro-lote, por ejemplo: 
 py -m streamlit run dashboard/app.py
 ```
 
-Se abre [http://localhost:8501](http://localhost:8501). Ve a la pestaña **⚡ Streaming en vivo**: queda vacía y esperando datos.
+Se abre [http://localhost:8501](http://localhost:8501). Ve a la pestaña **Streaming en vivo**: queda vacía y esperando datos.
 
 **Ventana 3 — productor**
 
