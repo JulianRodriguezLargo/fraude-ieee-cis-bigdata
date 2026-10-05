@@ -1,5 +1,5 @@
-# Etapa 1 del entorno: Spark + Delta Lake + JupyterLab en un solo contenedor.
-# Las etapas siguientes (MinIO, Airflow y Kafka) se agregan a este archivo cuando el pipeline base ya corra.
+# Entorno del proyecto: Spark + Delta Lake + JupyterLab en un solo contenedor.
+# MinIO, Airflow y Kafka quedaron fuera del alcance implementado (ver README, Arquitectura).
 #
 # Uso:
 #   docker compose up -d --build     -> construye la imagen y arranca JupyterLab en http://localhost:8888

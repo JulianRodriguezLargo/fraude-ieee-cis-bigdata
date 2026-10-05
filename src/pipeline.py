@@ -1,7 +1,7 @@
 """Ejecuta el pipeline completo en orden, de punta a punta.
 
-Es el orquestador de la etapa 1. Cuando se agregue Airflow (etapa 3), el DAG
-llamará exactamente a estas mismas funciones, así que no se duplica lógica.
+Es el orquestador del proyecto. Las etapas son funciones independientes: un DAG de
+Airflow podría llamarlas tal cual, sin duplicar lógica.
 
 Uso:
     python -m src.pipeline                                   # todo: bronze silver gold_kpis gold_features modelo

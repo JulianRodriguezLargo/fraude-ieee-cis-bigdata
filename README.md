@@ -31,14 +31,14 @@ CSV de Kaggle ─► BRONZE ─► SILVER ─► GOLD ────────�
 
 Todo corre en **Spark 3.5 + Delta Lake 3.3** dentro de Docker. El lakehouse vive en `data/lakehouse/` dentro del contenedor, guardado en un volumen de Docker llamado `lakehouse`.
 
-**Alcance de esta entrega (Fase 2).** De la arquitectura de la Fase 1 se implementaron las capas que generan el valor del proyecto: ingesta, almacenamiento Medallion, procesamiento, EDA y modelo. MinIO, Airflow y Kafka quedan para una etapa posterior:
+**Alcance implementado.** De la arquitectura de la Fase 1 se implementaron las capas que generan el valor del proyecto: ingesta, almacenamiento Medallion, procesamiento, EDA, modelo y dashboard. MinIO, Airflow y Kafka quedaron fuera del alcance:
 
 - La guía del curso permite el sistema de archivos local como almacenamiento.
 - Marca Airflow como opcional.
 - Define el streaming como bonus.
 - Además, la edición gratuita de MinIO fue archivada en 2026.
 
-El código ya está preparado para esos cambios: el lakehouse se cambia con una sola variable (`LAKEHOUSE`), y `src/pipeline.py` expone las etapas como funciones que un DAG de Airflow puede llamar sin duplicar lógica.
+Si el proyecto continuara, el código ya permite agregarlos: el lakehouse se cambia con una sola variable (`LAKEHOUSE`), y `src/pipeline.py` expone las etapas como funciones que un DAG de Airflow podría llamar sin duplicar lógica.
 
 ## Estructura del repositorio
 
