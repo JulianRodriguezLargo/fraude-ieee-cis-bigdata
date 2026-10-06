@@ -42,7 +42,7 @@ NOMBRES = {
 FILTROS = ["ProductCD", "card6", "DeviceType", "P_email_proveedor"]
 MIN_TRANSACCIONES = 100  # una tasa con menos transacciones no es confiable
 
-st.set_page_config(page_title="Fraude en pagos · IEEE-CIS", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="Fraude en pagos · IEEE-CIS", page_icon="", layout="wide")
 
 
 # ---------------------------------------------------------------- formato (español: 1.234,5)
